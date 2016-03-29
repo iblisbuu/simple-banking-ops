@@ -22,7 +22,7 @@ class BankingOperationCommand extends Command
     const CMD_BALANCE = 'account:balance';
     const CMD_WITHDRAW = 'account:withdraw';
     const CMD_DEPOSIT = 'account:deposit';
-    const CMS_OVER_DRAFT = 'account:orverdraft';
+    const CMD_OVER_DRAFT = 'account:orverdraft';
     const OPTION_BALANCE            = 'balance';
     const OPTION_OVERDRAFT          = 'overdraft';
     const ARGUMENT_ACCOUNT_NUMBER   = 'accountNumber';
