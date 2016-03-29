@@ -100,7 +100,7 @@ class AccountTest extends \PHPUnit_Framework_TestCase
      */
     public function testAccountisClosedByDefault()
     {   
-        $this->assertFalse($this->object->isOpen());
+        $this->assertTrue($this->object->isOpen());
     }
     
     /**

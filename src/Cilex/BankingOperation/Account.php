@@ -16,8 +16,9 @@ abstract class Account implements BankingOperation
     private $accountNumber;
     
     private $totalBalance = 0.00;
+    protected $overdraftAmount = 0.0;
     
-    private $accountOpen  = false;    
+    private $accountOpen  = true;    
     protected $accountsInfo;
     
     public function __construct($accountNumber)
@@ -44,10 +45,12 @@ abstract class Account implements BankingOperation
      */
     public function getBalance()
     {
+        if (!empty($this->accountsInfo[$this->accountNumber]['total_balane'])) {
+            return $this->accountsInfo[$this->accountNumber]['total_balane'];
+        }
         if (!empty($this->totalBalance)) {
             return (double) $this->totalBalance;
         }
-        return $this->accountsInfo[$this->accountNumber]['total_balane'];
     }
     
     /**
@@ -113,12 +116,43 @@ abstract class Account implements BankingOperation
         $accountDetails[$this->accountNumber]['total_balane'] = $this->totalBalance;
         $accountDetails[$this->accountNumber]['account_type'] = $accountType;
         $accountDetails[$this->accountNumber]['overdraft_amount'] = $this->getOverdraftLimit();
+        $accountDetails[$this->accountNumber]['is_open'] = 1;
         if (is_array($accountsInfo)) {
             $accountsInfo = $accountsInfo +  $accountDetails;
         } else {
             $accountsInfo = $accountDetails;
         }
         $return = file_put_contents(self::ACCOUNT_INFO_FILE_NAME, json_encode($accountsInfo, true));
+    }
+    
+    /**
+     *
+     * To update existing record
+     */
+    public function updateAccountDetails()
+    {
+        $accountsInfo = $this->accountsInfo;
+        $accountsInfo[$this->accountNumber]['total_balane'] = $this->totalBalance;
+        $accountsInfo[$this->accountNumber]['is_open'] = 1;
+        if (!$this->accountOpen) {
+            $accountsInfo[$this->accountNumber]['is_open'] = 0;
+        }
+        $return = file_put_contents(self::ACCOUNT_INFO_FILE_NAME, json_encode($accountsInfo, true));
+    }
+    
+    /**
+     * @param string $accountNumber
+     * @param sting $accountType
+     */
+    public function getAccountDetails($accountNumber, $accountType)
+    {
+        if (!empty($this->accountsInfo[$accountNumber])) {
+            $this->accountNumber = $accountNumber;
+            $this->totalBalance = $this->accountsInfo[$accountNumber]['total_balane'];
+            $this->overdraftAmount = $this->accountsInfo[$accountNumber]['overdraft_amount'];
+            return true;
+        }
+        return false;
     }
     
     /**

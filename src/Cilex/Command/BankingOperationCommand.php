@@ -20,7 +20,8 @@ class BankingOperationCommand extends Command
     const CMD_OPEN = 'account:open';
     const CMD_CLOSE = 'account:close';
     const CMD_BALANCE = 'account:balance';
-    const CMD_WITHDRAW = 'acccount:withdraw';
+    const CMD_WITHDRAW = 'account:withdraw';
+    const CMD_DEPOSIT = 'account:deposit';
     const CMS_OVER_DRAFT = 'account:orverdraft';
     const OPTION_BALANCE            = 'balance';
     const OPTION_OVERDRAFT          = 'overdraft';
@@ -177,20 +178,46 @@ class BankingOperationCommand extends Command
         switch ($currentCommand) {
             case self::CMD_OPEN :
                 $this
-                ->setName('account:open')
-                ->setDescription('Open a new bank account.')
-                ->addArgument(self::ARGUMENT_ACCOUNT_NUMBER, InputArgument::REQUIRED, 'Please enter an account number!')
-                ->addArgument(self::ARGUMENT_ACCOUNT_TYPE, InputArgument::REQUIRED, 'Please enter an account type!')
-                ->addArgument(self::ARGUMENT_DEPOSIT_AMOUNT, InputArgument::OPTIONAL, 'Please enter the deposit amount!')
-                ->addArgument(self::ARGUMENT_WITHDRAW_AMOUNT, InputArgument::OPTIONAL, 'Please enter the amount you would like to withdraw!')
-                ->addArgument(self::ARGUMENT_OVERDRAFT_AMOUNT, InputArgument::OPTIONAL, 'Please enter the overdraft amount!')
-                ->addOption(self::OPTION_OVERDRAFT, null, InputOption::VALUE_NONE, 'If set, the overdraft limit will be shown')
-                ->addOption(self::OPTION_BALANCE, null, InputOption::VALUE_NONE, 'If set, the balance will be shown');
+                ->setName($currentCommand)
+                    ->setDescription('Open a new bank account.')
+                    ->addArgument(self::ARGUMENT_ACCOUNT_NUMBER, InputArgument::REQUIRED, 'Please enter an account number!')
+                    ->addArgument(self::ARGUMENT_ACCOUNT_TYPE, InputArgument::REQUIRED, 'Please enter an account type!')
+                    ->addArgument(self::ARGUMENT_DEPOSIT_AMOUNT, InputArgument::OPTIONAL, 'Please enter the deposit amount!')
+                    ->addArgument(self::ARGUMENT_WITHDRAW_AMOUNT, InputArgument::OPTIONAL, 'Please enter the amount you would like to withdraw!')
+                    ->addArgument(self::ARGUMENT_OVERDRAFT_AMOUNT, InputArgument::OPTIONAL, 'Please enter the overdraft amount!')
+                    ->addOption(self::OPTION_OVERDRAFT, null, InputOption::VALUE_NONE, 'If set, the overdraft limit will be shown')
+                    ->addOption(self::OPTION_BALANCE, null, InputOption::VALUE_NONE, 'If set, the balance will be shown');
                 break;
             case self::CMD_BALANCE : 
                 $this
-                    ->setName('account:balance')
+                    ->setName($currentCommand)
                     ->setDescription('Open a new bank account.')
+                    ->addArgument(self::ARGUMENT_ACCOUNT_NUMBER, InputArgument::REQUIRED, 'Please enter an account number!')
+                    ->addArgument(self::ARGUMENT_ACCOUNT_TYPE, InputArgument::REQUIRED, 'Please enter an account type!')
+                ;
+                break;
+            case self::CMD_WITHDRAW :
+                $this
+                    ->setName($currentCommand)
+                    ->setDescription('Withdraw from existing account')
+                    ->addArgument(self::ARGUMENT_ACCOUNT_NUMBER, InputArgument::REQUIRED, 'Please enter an account number!')
+                    ->addArgument(self::ARGUMENT_ACCOUNT_TYPE, InputArgument::REQUIRED, 'Please enter an account type!')
+                    ->addArgument(self::ARGUMENT_WITHDRAW_AMOUNT, InputArgument::OPTIONAL, 'Please enter the deposit amount!')
+                ;
+                break;
+            case self::CMD_DEPOSIT :
+                $this
+                    ->setName($currentCommand)
+                    ->setDescription('Deposit to existing account')
+                    ->addArgument(self::ARGUMENT_ACCOUNT_NUMBER, InputArgument::REQUIRED, 'Please enter an account number!')
+                    ->addArgument(self::ARGUMENT_ACCOUNT_TYPE, InputArgument::REQUIRED, 'Please enter an account type!')
+                    ->addArgument(self::ARGUMENT_DEPOSIT_AMOUNT, InputArgument::OPTIONAL, 'Please enter the deposit amount!')
+                ;
+                break;
+            case self::CMD_CLOSE :
+                $this
+                    ->setName($currentCommand)
+                    ->setDescription('Close existing account')
                     ->addArgument(self::ARGUMENT_ACCOUNT_NUMBER, InputArgument::REQUIRED, 'Please enter an account number!')
                     ->addArgument(self::ARGUMENT_ACCOUNT_TYPE, InputArgument::REQUIRED, 'Please enter an account type!')
                 ;
@@ -206,13 +233,13 @@ class BankingOperationCommand extends Command
     protected function setInteract(InputInterface $input, OutputInterface $output)
     {
         $currentCommand = $this->getName();
+        //account type
+        $input->setArgument(self::ARGUMENT_ACCOUNT_TYPE, $this->getAccountType($output));
+        
+        //account number
+        $input->setArgument(self::ARGUMENT_ACCOUNT_NUMBER, $this->getAccountNumber($output));
         switch ($currentCommand) {
             case self::CMD_OPEN :
-                //account type
-                $input->setArgument(self::ARGUMENT_ACCOUNT_TYPE, $this->getAccountType($output));
-                
-                //account number
-                $input->setArgument(self::ARGUMENT_ACCOUNT_NUMBER, $this->getAccountNumber($output));
                 
                 //offer overdraft to certain accounts
                 switch ($input->getArgument(self::ARGUMENT_ACCOUNT_TYPE)) {
@@ -227,14 +254,15 @@ class BankingOperationCommand extends Command
                 //amount to withdraw
                 $this->setWithdraw($input, $output);
                 break;
-            case self::CMD_BALANCE :
-                
-                //account type
-                $input->setArgument(self::ARGUMENT_ACCOUNT_TYPE, $this->getAccountType($output));
-                
-                //account number
-                $input->setArgument(self::ARGUMENT_ACCOUNT_NUMBER, $this->getAccountNumber($output));
-                
+            case self::CMD_WITHDRAW :
+                //amount to withdraw
+                $this->setWithdraw($input, $output);
+                break;
+            case self::CMD_DEPOSIT :
+                //amount to withdraw
+                $this->setDeposit($input, $output);
+                break;
+            case self::CMD_CLOSE :
                 break;
         }
     }
@@ -268,6 +296,37 @@ class BankingOperationCommand extends Command
             case self::CMD_BALANCE :
                 $balanceAmount = $account->getBalance();
                 $output->writeln('Your Current Balance : ' . $balanceAmount);
+                break;
+            case self::CMD_WITHDRAW :
+                $withdrawAmount = round($input->getArgument(self::ARGUMENT_WITHDRAW_AMOUNT), 2);
+                if ($account->getAccountDetails($accountNumber, $accountType)) {
+                    $account->withdraw($withdrawAmount);
+                    $account->updateAccountDetails();
+                    $output->writeln(sprintf('A withdraw of %s was made.' , $withdrawAmount));
+                    $output->writeln('Your Current Balance : ' . $account->getBalance());
+                } else {
+                    $output->writeln('Your Account not exist ' . $accountNumber);
+                }
+                break;
+            case self::CMD_DEPOSIT :
+                $depositAmount = round($input->getArgument(self::ARGUMENT_DEPOSIT_AMOUNT), 2);
+                if ($account->getAccountDetails($accountNumber, $accountType)) {
+                    $account->deposit($depositAmount);
+                    $account->updateAccountDetails();
+                    $output->writeln(sprintf('A withdraw of %s was made.' , $depositAmount));
+                    $output->writeln('Your Current Balance : ' . $account->getBalance());
+                } else {
+                    $output->writeln('Your Account not exist ' . $accountNumber);
+                }
+                break;
+            case self::CMD_CLOSE :
+                if ($account->getAccountDetails($accountNumber, $accountType)) {
+                    $account->close();
+                    $account->updateAccountDetails();
+                    $output->writeln(sprintf('Your Acccount has been closed %s' , $accountNumber));
+                } else {
+                    $output->writeln('Your Account not exist ' . $accountNumber);
+                }
                 break;
         }
         
