@@ -22,6 +22,7 @@ To run this command from the root directory:
 ```php bank.php account:open ```
 
 __account:close__ - Close a existing bank account.
+
 ```php bank.php account:close ```
 
 __account:withdraw__ - Withdraw amount from existing bank account. 
@@ -29,9 +30,11 @@ __account:withdraw__ - Withdraw amount from existing bank account.
 ```php bank.php account:withdraw```
 
 __account:deposit__ - Deposit amount to existing bank account.
+
 ```php bank.php account:deposit```
 
 __account:balance__ - Check the balance amount from existing bank account.
+
 ```php bank.php account:balance```
 
 
