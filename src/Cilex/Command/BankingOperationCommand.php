@@ -332,6 +332,14 @@ class BankingOperationCommand extends Command
         
     }
     
+    /**
+     * 
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @param string $accountNumber
+     * @param string $accountType
+     * @param Account $account
+     */
     protected function openNewAccount(InputInterface $input, OutputInterface $output, $accountNumber, $accountType, $account ) 
     {
         $text = array();
@@ -341,7 +349,7 @@ class BankingOperationCommand extends Command
         
         if ($account->isAccountExist()) {
             $output->writeln('Account Already Exist');
-            break;
+            return '';
         }
         //TODO check if account exists and handle accordingly
         $account->open();
